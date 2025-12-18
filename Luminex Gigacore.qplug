@@ -1,0 +1,2120 @@
+--[[ 
+  To add a new GigaCore model:
+  1. Add its name and port count to GigaCoreModels.
+     e.g., ["GigaCore 48"] = 48
+]]
+--------------------------------------------------------------------------------
+-- Plugin Constants and Metadata
+--------------------------------------------------------------------------------
+PluginInfo = {
+  Name        = "Luminex ~GigaCore",
+  Version     = "1.0",
+  Id          = "Luminex GigaCore--",
+  Description = "Luminex GigaCore",
+  ShowDebug   = true
+}
+local LINK_OFF = {0,255,0,200}                          -- LINK-STATE COLORS (TBE)
+local LINK_ON  = {0,255,0,200}
+
+local LogoLuminex = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDIwLjEuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCA0MzkuNiAxMzUuNCIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgNDM5LjYgMTM1LjQ7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojRkZGRkZGO30KCS5zdDF7ZmlsbDojQ0FENDAwO30KPC9zdHlsZT4KPHBhdGggaWQ9IlhNTElEXzcwNV8iIGNsYXNzPSJzdDAiIGQ9Ik0xMTEuMSw3NC45VjMxLjdoMTUuMXY1NUg5Ni40Yy00LjMsMC03LjctMC4zLTEwLTAuOWMtMi4zLTAuNi00LjQtMS44LTYuMi0zLjUKCWMtMy45LTMuNS01LjgtOS4xLTUuOC0xNi44VjMxLjdoMTUuMXYzNS4zYzAsMi41LDAuNiw0LjQsMS45LDUuOGMxLjMsMS40LDMuMSwyLjEsNS4zLDIuMUgxMTEuMXoiLz4KPHBhdGggaWQ9IlhNTElEXzcwM18iIGNsYXNzPSJzdDAiIGQ9Ik0xMzUuNSwzMS43aDU1LjZjNS4xLDAsOC45LDAuNCwxMS41LDEuMWMyLjYsMC43LDQuOCwyLjEsNi42LDRjMy4zLDMuNiw1LDguNiw1LDE0Ljl2MzVoLTE1LjEKCVY1NC4xYzAtMi42LTAuMS00LjUtMC40LTUuNWMtMC4yLTEtMC44LTItMS42LTIuOGMtMS41LTEuNS0zLjktMi4zLTcuMS0yLjNoLTh2NDMuMmgtMTUuMVY0My41aC0xNi4zdjQzLjJoLTE1LjFWMzEuN3oiLz4KPHBhdGggaWQ9IlhNTElEXzcwMV8iIGNsYXNzPSJzdDAiIGQ9Ik0yNDcuNSwzMS43aDI5LjJjNC4zLDAsNy43LDAuMywxMCwwLjljMi4zLDAuNiw0LjQsMS44LDYuMiwzLjVjMy45LDMuNSw1LjgsOS4xLDUuOCwxNi43djMzLjgKCWgtMTUuMVY1MS4xYzAtMi43LTAuNi00LjctMS44LTUuOWMtMS4yLTEuMi0zLjItMS44LTYtMS44aC0xMy4ydjQzLjJoLTE1LjFWMzEuN3oiLz4KPHBhdGggaWQ9IlhNTElEXzY5OV8iIGNsYXNzPSJzdDAiIGQ9Ik0zNTQuNyw1My4zVjY1aC0zMS45YzAuMywzLjYsMS41LDYuMiwzLjUsNy43YzIsMS41LDUuMywyLjMsOS45LDIuM2gxOC41djExLjdoLTIwLjEKCWMtNC40LDAtNy45LTAuNC0xMC43LTEuMmMtMi43LTAuOC01LjMtMi4xLTcuOC00Yy02LjctNS4xLTEwLTEyLjgtMTAtMjNjMC02LjcsMS44LTEyLjUsNS4zLTE3LjRjMi40LTMuNCw1LjMtNS44LDguNy03LjIKCWMzLjQtMS40LDcuOC0yLjIsMTMuMy0yLjJoMjEuMnYxMS43aC0yMC4xYy00LjEsMC03LDAuNy04LjcsMi4xYy0xLjcsMS40LTIuNyw0LTMuMSw3LjdIMzU0Ljd6Ii8+CjxwYXRoIGlkPSJYTUxJRF82OTdfIiBjbGFzcz0ic3QwIiBkPSJNMzgwLjIsNTkuNWwtMTkuOC0yNy44aDE2LjlMMzg4LjksNDhsMTEuMi0xNi4zaDE3LjhsLTIwLjYsMjcuOGwyMC42LDI3LjJoLTE3LjhMMzg4LjksNzEKCWwtMTEuNiwxNS43aC0xNy44TDM4MC4yLDU5LjV6Ii8+CjxwYXRoIGlkPSJYTUxJRF82OTZfIiBjbGFzcz0ic3QxIiBkPSJNMjM0LjYsMTEuN2MtMC43LTAuMi0xLjctMC4yLTIuOS0wLjJoLTguNnY5YzAsMiwwLjYsMy41LDEuNyw0LjVjMC41LDAuNSwxLjIsMC44LDEuOCwwLjkKCWMwLjcsMC4yLDEuNywwLjIsMi45LDAuMmg4LjZ2LTljMC0yLTAuNi0zLjUtMS43LTQuNUMyMzUuOSwxMi4yLDIzNS4zLDExLjksMjM0LjYsMTEuN3oiLz4KPHBhdGggaWQ9IlhNTElEXzY5NV8iIGNsYXNzPSJzdDAiIGQ9Ik02OS4xLDc0LjRjLTAuNS0wLjQtMS4xLTAuNy0xLjctMC44Yy0wLjYtMC4yLTEuNS0wLjItMi43LTAuMmgtMi4xaC01LjhoLTEuNgoJYy03LDAtMTEuOS0wLjYtMTQuNi0xLjljLTIuOC0xLjMtNC40LTMuNi00LjktN2MtMC4zLTEuOC0wLjUtNS4zLTAuNy0xMC43VjE4LjJoLTE2djM1LjVjMCw3LjQsMC41LDEyLjcsMS4zLDE1LjgKCWMyLjIsOC4xLDcuNSwxMy40LDE1LjgsMTUuOGMzLjYsMSw5LjUsMS40LDE3LjUsMS40aDl2MGMwLjEsMCwwLjEsMCwwLjIsMGg3Ljl2LTguM0M3MC43LDc2LjYsNzAuMiw3NS4yLDY5LjEsNzQuNHoiLz4KPHBhdGggaWQ9IlhNTElEXzY5NF8iIGNsYXNzPSJzdDAiIGQ9Ik0yMjguOSwzMS43Yy0yLjEsMC0zLjYsMC42LTQuNiwxLjdjLTAuNSwwLjUtMC44LDEuMi0xLDEuOGMtMC4yLDAuNy0wLjMsMS43LTAuMywyLjl2MS4xdjcuNgoJdjM5LjloMTUuMVY0MC4zdi0xLjF2LTcuNkgyMjguOXoiLz4KPGc+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTM2LjksMTE4LjR2LTE0LjhoMWw1LjgsOC44YzEuMiwxLjgsMi4xLDMuMiwyLjgsNC43bDAsMGMtMC4yLTItMC4yLTMuNy0wLjItNnYtNy40aDF2MTQuOGgtMWwtNS43LTguNgoJCWMtMS4xLTEuNy0yLjEtMy4zLTIuOS00LjhsMCwwYzAuMSwxLjgsMC4xLDMuNCwwLjEsNS45djcuNUgxMzYuOXoiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xNjEuMSwxMTFoLTUuOXY2LjVoNi42djAuOWgtNy43di0xNC44aDcuM3YwLjloLTYuM3Y1LjdoNS45VjExMXoiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xNzEsMTA0LjRoLTQuOHYtMC45aDEwLjd2MC45aC00Ljh2MTRIMTcxVjEwNC40eiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTE4NS4yLDExOC40bC0zLjktMTQuOGgxLjFsMi4yLDguNGMwLjUsMS45LDAuOSwzLjcsMS4yLDUuMWgwYzAuMi0xLjQsMC44LTMuMSwxLjQtNS4xbDIuNC04LjRoMWwyLjIsOC4zCgkJYzAuNSwxLjgsMSwzLjcsMS4yLDUuMWgwYzAuMy0xLjYsMC44LTMuMiwxLjMtNS4xbDIuNC04LjNoMS4xbC00LjQsMTQuOGgtMWwtMi4yLTguNWMtMC42LTIuMi0wLjktMy42LTEuMS01aDAKCQljLTAuMiwxLjQtMC43LDIuOC0xLjMsNWwtMi41LDguNUgxODUuMnoiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yMTYuNCwxMTAuOGMwLDUuMi0zLjIsNy44LTYuNiw3LjhjLTMuNywwLTYuNS0yLjktNi41LTcuNWMwLTQuOSwyLjktNy44LDYuNy03LjgKCQlDMjEzLjcsMTAzLjMsMjE2LjQsMTA2LjIsMjE2LjQsMTEwLjh6IE0yMDQuNCwxMTEuMWMwLDMuMywxLjksNi43LDUuNSw2LjdjMy41LDAsNS41LTMuMiw1LjUtNi45YzAtMy4xLTEuNy02LjctNS40LTYuNwoJCUMyMDYuMSwxMDQuMiwyMDQuNCwxMDcuNiwyMDQuNCwxMTEuMXoiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yMjIuMywxMDMuOGMwLjktMC4yLDIuMi0wLjMsMy4yLTAuM2MxLjksMCwzLjIsMC40LDQsMS4zYzAuNiwwLjYsMSwxLjYsMSwyLjZjMCwyLTEuMiwzLjMtMi45LDMuOXYwCgkJYzEuMiwwLjQsMS45LDEuNSwyLjMsMy4xYzAuNSwyLjMsMC44LDMuNCwxLjEsNEgyMzBjLTAuMi0wLjQtMC41LTEuNy0wLjktMy42Yy0wLjUtMi4xLTEuNC0zLjEtMy4zLTMuMmgtMi4zdjYuOGgtMS4xVjEwMy44egoJCSBNMjIzLjQsMTEwLjdoMi40YzIuMywwLDMuOC0xLjMsMy44LTMuMmMwLTIuMy0xLjctMy4yLTQtMy4yYy0xLDAtMS44LDAuMS0yLjEsMC4yVjExMC43eiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTIzNi43LDEwMy41aDEuMXY3LjVoMC4xYzAuNC0wLjYsMC45LTEuMSwxLjMtMS41bDUuMy02aDEuM2wtNS42LDYuM2w2LjIsOC41aC0xLjNsLTUuNi03LjhsLTEuNSwxLjd2Ni4xCgkJaC0xLjFWMTAzLjV6Ii8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMjYwLjEsMTAzLjV2MTQuOGgtMS4xdi0xNC44SDI2MC4xeiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTI2NywxMTguNHYtMTQuOGgxbDUuOCw4LjhjMS4yLDEuOCwyLjEsMy4yLDIuOCw0LjdsMCwwYy0wLjItMi0wLjItMy43LTAuMi02di03LjRoMXYxNC44aC0xbC01LjctOC42CgkJYy0xLjEtMS43LTIuMS0zLjMtMi45LTQuOGwwLDBjMC4xLDEuOCwwLjEsMy40LDAuMSw1Ljl2Ny41SDI2N3oiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yODcuMiwxMDQuNGgtNC44di0wLjloMTAuN3YwLjloLTQuOHYxNGgtMS4xVjEwNC40eiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTMwNC45LDExMWgtNS45djYuNWg2LjZ2MC45aC03Ljd2LTE0LjhoNy4zdjAuOWgtNi4zdjUuN2g1LjlWMTExeiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTMxMS40LDEwMy41aDEuMXYxNGg2LjZ2MC45aC03LjdWMTAzLjV6Ii8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMzI0LjYsMTAzLjVoMS4xdjE0aDYuNnYwLjloLTcuN1YxMDMuNXoiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0zMzguOCwxMDMuNXYxNC44aC0xLjF2LTE0LjhIMzM4Ljh6Ii8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMzU2LjMsMTE3LjdjLTAuNywwLjMtMi4zLDAuOC00LjMsMC44Yy0yLDAtMy43LTAuNS01LjItMS45Yy0xLjItMS4yLTItMy4yLTItNS42YzAtNC4xLDIuNy03LjYsNy43LTcuNgoJCWMxLjYsMCwyLjksMC40LDMuNSwwLjdsLTAuNCwwLjljLTAuOC0wLjQtMS43LTAuNi0zLjItMC42Yy00LjEsMC02LjYsMi42LTYuNiw2LjdjMCw0LjIsMi40LDYuNyw2LjQsNi43YzEuNiwwLDIuNi0wLjIsMy4xLTAuNQoJCXYtNS4yaC0zLjRWMTExaDQuNVYxMTcuN3oiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0zNjkuNywxMTFoLTUuOXY2LjVoNi42djAuOWgtNy43di0xNC44aDcuM3YwLjloLTYuM3Y1LjdoNS45VjExMXoiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0zNzYuMywxMTguNHYtMTQuOGgxbDUuOCw4LjhjMS4yLDEuOCwyLjEsMy4yLDIuOCw0LjdsMCwwYy0wLjItMi0wLjItMy43LTAuMi02di03LjRoMXYxNC44aC0xbC01LjctOC42CgkJYy0xLjEtMS43LTIuMS0zLjMtMi45LTQuOGwwLDBjMC4xLDEuOCwwLjEsMy40LDAuMSw1Ljl2Ny41SDM3Ni4zeiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTQwMy43LDExNy44Yy0wLjcsMC40LTIuMiwwLjctNCwwLjdjLTMuNiwwLTctMi4zLTctNy41YzAtNC40LDIuOC03LjcsNy41LTcuN2MxLjksMCwzLDAuNCwzLjQsMC43bC0wLjMsMC45CgkJYy0wLjctMC40LTEuOC0wLjYtMy4xLTAuNmMtNCwwLTYuNCwyLjYtNi40LDYuOWMwLDQsMi4zLDYuNiw2LjMsNi42YzEuMywwLDIuNS0wLjMsMy4zLTAuN0w0MDMuNywxMTcuOHoiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik00MTYuNCwxMTFoLTUuOXY2LjVoNi42djAuOWgtNy43di0xNC44aDcuM3YwLjloLTYuM3Y1LjdoNS45VjExMXoiLz4KPC9nPgo8L3N2Zz4K"
+local LogoPSU = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iOS45NzI2NTYybW0iCiAgIGhlaWdodD0iOS45NjY3OTY5bW0iCiAgIHZpZXdCb3g9IjAgMCA5Ljk3MjY1NjIgOS45NjY3OTY5IgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmc1IgogICB4bWw6c3BhY2U9InByZXNlcnZlIgogICB4bWxuczppbmtzY2FwZT0iaHR0cDovL3d3dy5pbmtzY2FwZS5vcmcvbmFtZXNwYWNlcy9pbmtzY2FwZSIKICAgeG1sbnM6c29kaXBvZGk9Imh0dHA6Ly9zb2RpcG9kaS5zb3VyY2Vmb3JnZS5uZXQvRFREL3NvZGlwb2RpLTAuZHRkIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxzb2RpcG9kaTpuYW1lZHZpZXcKICAgICBpZD0ibmFtZWR2aWV3NyIKICAgICBwYWdlY29sb3I9IiNmZmZmZmYiCiAgICAgYm9yZGVyY29sb3I9IiMwMDAwMDAiCiAgICAgYm9yZGVyb3BhY2l0eT0iMC4yNSIKICAgICBpbmtzY2FwZTpzaG93cGFnZXNoYWRvdz0iMiIKICAgICBpbmtzY2FwZTpwYWdlb3BhY2l0eT0iMC4wIgogICAgIGlua3NjYXBlOnBhZ2VjaGVja2VyYm9hcmQ9IjAiCiAgICAgaW5rc2NhcGU6ZGVza2NvbG9yPSIjZDFkMWQxIgogICAgIGlua3NjYXBlOmRvY3VtZW50LXVuaXRzPSJtbSIKICAgICBzaG93Z3JpZD0iZmFsc2UiIC8+PGRlZnMKICAgICBpZD0iZGVmczIiPjxjbGlwUGF0aAogICAgICAgY2xpcFBhdGhVbml0cz0idXNlclNwYWNlT25Vc2UiCiAgICAgICBpZD0iY2xpcFBhdGgxMTQwOSI+PGcKICAgICAgICAgaWQ9ImcxMTQxMyIKICAgICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoMi42OTUzNzYyLDAsMCwtMi42OTY5ODA4LC0xNTE2Ljk4ODMsNzQ3Ljg0MjA2KSI+PHBhdGgKICAgICAgICAgICBkPSJNIDE3My4xMTg5MSwtNDcuNDE2ODg5IEggMTIyNC43ODg4IFYgMTAwMy42MjczIEggMTczLjExODkxIFoiCiAgICAgICAgICAgaWQ9InBhdGgxMTQxMSIKICAgICAgICAgICBzdHlsZT0ic3Ryb2tlLXdpZHRoOjAuMzcwODk1IiAvPjwvZz48L2NsaXBQYXRoPjxjbGlwUGF0aAogICAgICAgY2xpcFBhdGhVbml0cz0idXNlclNwYWNlT25Vc2UiCiAgICAgICBpZD0iY2xpcFBhdGgxMTQxNSI+PGcKICAgICAgICAgaWQ9ImcxMTQxOSIKICAgICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoMi42OTUzNzYyLDAsMCwtMi42OTY5ODA4LC0xNTI0Ljc2MTIsNzM2LjA4MTc3KSI+PHBhdGgKICAgICAgICAgICBkPSJNIDE3My4xMTg5MSwtNDcuNDE2ODg5IEggMTIyNC43ODg4IFYgMTAwMy42MjczIEggMTczLjExODkxIFoiCiAgICAgICAgICAgaWQ9InBhdGgxMTQxNyIKICAgICAgICAgICBzdHlsZT0ic3Ryb2tlLXdpZHRoOjAuMzcwODk1IiAvPjwvZz48L2NsaXBQYXRoPjwvZGVmcz48ZwogICAgIGlua3NjYXBlOmxhYmVsPSJMYXllciAxIgogICAgIGlua3NjYXBlOmdyb3VwbW9kZT0ibGF5ZXIiCiAgICAgaWQ9ImxheWVyMSIKICAgICBzb2RpcG9kaTppbnNlbnNpdGl2ZT0idHJ1ZSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNTU2Ljk2OTEzLC0yNzIuOTI4MDYpIj48cGF0aAogICAgICAgZD0iTSAyNDkuNzM1ODMsOTMxLjIxNTAyIEggMTI0OS43MzU0IFYgLTY4Ljc4NDcxMSBIIDI0OS43MzU4MyBaIgogICAgICAgc3R5bGU9ImZpbGw6IzIzMWYyMDtmaWxsLW9wYWNpdHk6MTtmaWxsLXJ1bGU6bm9uemVybztzdHJva2U6bm9uZTtzdHJva2Utd2lkdGg6MC4zNTI3NzgiCiAgICAgICBpZD0icGF0aDEwNTkiIC8+PC9nPjxnCiAgICAgaW5rc2NhcGU6Z3JvdXBtb2RlPSJsYXllciIKICAgICBpZD0ibGF5ZXIyIgogICAgIGlua3NjYXBlOmxhYmVsPSJMYXllciAyIgogICAgIHRyYW5zZm9ybT0idHJhbnNsYXRlKC01NTYuOTY5MTMsLTI3Mi45MjgwNikiPjxnCiAgICAgICBpZD0iZzEzMDEiCiAgICAgICB0cmFuc2Zvcm09Im1hdHJpeCgwLjM3MTAwNTczLDAsMCwtMC4zNzA3ODQ5OSw1NjUuNjk1MTQsMjcyLjkyODA3KSIKICAgICAgIGNsaXAtcGF0aD0idXJsKCNjbGlwUGF0aDExNDE1KSIKICAgICAgIGlua3NjYXBlOmV4cG9ydC1maWxlbmFtZT0iUFNVX0ljb25wbmcuc3ZnIgogICAgICAgaW5rc2NhcGU6ZXhwb3J0LXhkcGk9Ijk2IgogICAgICAgaW5rc2NhcGU6ZXhwb3J0LXlkcGk9Ijk2Ij48cGF0aAogICAgICAgICBkPSJtIDAsMCBoIC0yMC4xNiBjIC0xLjg1NCwtMC4wMDYgLTMuMzU0LC0xLjUwNiAtMy4zNiwtMy4zNiB2IC0xNS4xMiBjIDAuMDA2LC0xLjg1NCAxLjUwNiwtMy4zNTQgMy4zNiwtMy4zNiBoIDUuMDQgdiAzLjM2IGggLTUuMDQgdiAxNS4xMiBoIDEuNjggViAtOC40IGggMy4zNiB2IDUuMDQgaCAzLjM2IFYgLTguNCBoIDMuMzYgdiA1LjA0IGggMy4zNiBWIC04LjQgaCAzLjM2IHYgNS4wNCBIIDAgdiAtMTUuMTIgaCAtNS4wNCB2IC0zLjM2IEggMCBjIDEuODU0LDAuMDA2IDMuMzU0LDEuNTA2IDMuMzYsMy4zNiBWIC0zLjM2IEMgMy4zNTQsLTEuNTA2IDEuODU0LC0wLjAwNiAwLDAiCiAgICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7ZmlsbC1ydWxlOm5vbnplcm87c3Ryb2tlOm5vbmUiCiAgICAgICAgIGlkPSJwYXRoMTMwMyIgLz48L2c+PGcKICAgICAgIGlkPSJnMTMwNSIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KDAuMzcxMDA1NzMsMCwwLC0wLjM3MDc4NDk5LDU2Mi44MTEzNSwyNzcuMjg4NjEpIgogICAgICAgY2xpcC1wYXRoPSJ1cmwoI2NsaXBQYXRoMTE0MDkpIj48cGF0aAogICAgICAgICBkPSJtIDAsMCBoIC00LjMzMiBsIC0yLjczNCwtNi43MiBoIDMuNDQ0IGwgLTIuOTI4LC04LjQgOC4xOTQsMTEuNzYgaCAtMy41NTIgeiIKICAgICAgICAgc3R5bGU9ImZpbGw6I2ZmZmZmZjtmaWxsLW9wYWNpdHk6MTtmaWxsLXJ1bGU6bm9uemVybztzdHJva2U6bm9uZSIKICAgICAgICAgaWQ9InBhdGgxMzA3IiAvPjwvZz48L2c+PC9zdmc+Cg=="
+
+
+local GigaCoreModels = {
+  ["GigaCore 30i"]   = 30,
+  ["GigaCore O26-I"]   = 26,
+  ["GigaCore 20t"]   = 20,
+  ["GigaCore 18t"]   = 18,
+  ["GigaCore 16t"]   = 16,
+  ["GigaCore 16tf"]  = 16,
+  ["GigaCore 16i"]   = 16,
+  ["GigaCore 10t"]   = 10,
+  ["GigaCore 10t-IP"]= 10,
+  ["GigaCore 10i"]   = 10
+}
+
+local GROUP_COLORS = {
+  ["Trunk: 1"]     = {153, 153, 153},   -- #999999
+  ["Group: 1"]     = { 50,  81, 151},   -- #325197
+  ["Group: 2"]     = {232,   0,   0},   -- #E80000
+  ["Group: 3"]     = { 50, 205,  50},   -- #32CD32
+  ["Group: 4"]     = {  0, 232, 232},   -- #00E8E8
+  ["Group: 5"]     = {204,   0, 204},   -- #CC00CC
+  ["Group: 6"]     = {255, 130,   0},   -- #FF8200
+  ["Group: 7"]     = {232, 232,   0},   -- #E8E800
+  ["Group: 8"]     = {255,   0, 153},   -- #FF0099
+  ["Group: 9"]     = { 32, 178, 170},   -- #20B2AA
+  ["Group: 10"]    = {250, 128, 114},   -- #FA8072
+  ["Group: 11"]    = {  0,  51, 255},   -- #0033FF
+  ["Group: 12"]    = {  0, 128,   0},   -- #008000
+  ["Group: 13"]    = {187,  85,  85},   -- #BB5555
+  ["Group: 14"]    = {139,   0,   0},   -- #8B0000
+  ["Group: 15"]    = { 75,   0, 130},   -- #4B0082
+  ["Group: 16"]    = {153, 153,   0},   -- #999900
+  ["Group: 17"]    = {124, 232,   0},   -- #7CE800
+  ["Group: 18"]    = {102,   0, 102},   -- #660066
+  ["Group: 19"]    = { 47,  79,  79},   -- #2F4F4F
+  ["Group: 20"]    = {  0, 102, 204},   -- #0066CC
+}
+--------------------------------------------------------------------------------
+-- Global/State Variables
+--------------------------------------------------------------------------------
+local GROUPBOX_FILL_COLOR    = {12, 21, 42}                     --Groupbox's main page's  or {15,58,83} 
+local GROUPBOX_STROKE_COLOR  = {0,0,0}
+local GROUPBOX_STROKE_WIDTH  = 0
+local GROUPBOX_POSITION      = {0,0}
+local SIDE_MARGIN            = 70                                --Side of the buttons
+local GROUPBOX_EXTRA_PADDING = 5                                  -- Was planning on adding 80 to add more data here ( RSTP, IGMP... )
+
+local state = {
+  ws             = nil,     -- WebSocket reference
+  baseIP         = "",      -- From IP Address Textbox
+  currentIP      = "",      -- ip control page
+  prefixLength   = "",      -- ip control page
+  ipMode         = "",      -- ip control page
+  portCount      = 30       -- store # of ports here (Default: 30)
+}
+state.macAddress = ""
+state.firmwareVersion = ""
+state.groupNames = {}
+
+-- for PoE bounce ⚡indication
+local portPoEIndication = {}
+-- for Online/Offline status
+local offlinePulseTimer = nil
+local pulseOn = false
+
+local SPEED_CHOICES = {
+  "Auto",
+  "Disabled",
+  "1 Gbps",
+  "100 Mbps (Full-duplex)",
+  "100 Mbps (Half-duplex)",
+  "10 Mbps (Full-duplex)",
+  "10 Mbps (Half-duplex)"
+}
+
+local SPEED_API_MAP = {
+  ["1 Gbps"] = "1gbps fdx",
+  ["100 Mbps (Full-duplex)"] = "100mbps fdx",
+  ["100 Mbps (Half-duplex)"] = "100mbps hdx",
+  ["10 Mbps (Full-duplex)"] = "10mbps fdx",
+  ["10 Mbps (Half-duplex)"] = "10mbps hdx"
+}
+--------------------------------------------------------------------------------
+-- Light/Dark Theme
+--------------------------------------------------------------------------------
+local function getThemeColors()
+  return {
+    groupboxFill     = state.darkMode and {12, 21, 42}         or {240, 245, 255, 255},
+    textColor        = state.darkMode and {180, 255, 255}      or {75, 0, 0, 255},
+    textboxColor     = state.darkMode and {0, 0, 0}            or {0, 0, 0},
+    textboxBg        = state.darkMode and {40, 40, 60, 180}    or {215, 200, 180, 255},
+    buttonColor      = state.darkMode and {0, 150, 255}        or {255, 105, 0, 255},
+    buttonAltColor   = state.darkMode and {0, 150, 255}        or {255, 105, 0, 255},
+    buttonOffColor   = state.darkMode and {60, 60, 60}         or {200, 200, 200, 255},
+    indicatorFill    = state.darkMode and {20, 24, 40, 230}    or {240, 245, 255, 255},
+    strokeColor      = state.darkMode and {60, 60, 60}         or {120, 120, 120, 255},
+    rectangleFill    = state.darkMode and {30, 40, 60, 220}    or {240, 245, 255, 255},
+    labelGray        = state.darkMode and {200, 200, 200}      or {230, 230, 230, 255}
+  }
+end
+--------------------------------------------------------------------------------
+-- Helper function to map model name -> number of ports
+--------------------------------------------------------------------------------
+local function getPortCount(model)
+  return GigaCoreModels[model] or 30
+end
+--------------------------------------------------------------------------------
+-- Compute page size for the "Controls" page
+--------------------------------------------------------------------------------
+local function getControlsPageSize(portCount)     
+  local columns         = math.ceil(portCount / 2)
+  local btnW, btnH      = 66, 38
+  local colSpacing      = 8
+  local leftRightMargin = 40
+  local totalPortsW = columns * btnW + (columns - 1)*colSpacing
+  local totalW = totalPortsW + leftRightMargin*2
+  local totalH = 300          -- page height
+
+  return totalW, totalH
+end
+--------------------------------------------------------------------------------
+-- Utility / Logging
+--------------------------------------------------------------------------------
+local function log(m)
+  print(tostring(m))
+end
+
+local Json = Json
+--------------------------------------------------------------------------------
+-- Basic Auth
+--------------------------------------------------------------------------------
+function MergeTables(a, b)
+  local result = {}
+  for k, v in pairs(a) do result[k] = v end
+  for k, v in pairs(b) do result[k] = v end
+  return result
+end
+
+local function getAuthHeaders()
+  local user = Controls["auth_username"] and Controls["auth_username"].String or ""
+  local pass = Controls["auth_password"] and Controls["auth_password"].String or ""
+  if user == "" or pass == "" then return {} end
+  local token = Crypto.Base64Encode(user .. ":" .. pass)
+  return { ["Authorization"] = "Basic " .. token }
+end
+--------------------------------------------------------------------------------
+-- WebSocket Setup
+--------------------------------------------------------------------------------
+local function subscribeAllPorts()
+  if not state.ws then
+    return
+  end
+
+  for i = 1, state.portCount do       -- state.portCount loop only as many ports as the chosen model has
+    local linkMsg= string.format('{"subscription":{"path":"/ports/port/%d/link_state","action":"add","method":"changes"}}', i)
+    state.ws:Write(linkMsg)
+    local memberMsg= string.format('{"subscription":{"path":"/ports/port/%d/member_of","action":"add","method":"changes"}}', i)
+    state.ws:Write(memberMsg)
+	local indMsg= string.format('{"subscription":{"path":"/poe/ports/%d/indication","action":"add","method":"changes"}}', i)
+    state.ws:Write(indMsg)	
+	local rlinkxMsg= string.format('{"subscription":{"path":"/ports/port/%d/rlinkx","action":"add","method":"changes"}}', i)                                                                               --   1-RlinkX
+    state.ws:Write(rlinkxMsg)
+	local legendMsg= string.format('{"subscription":{"path":"/ports/port/%d/legend","action":"add","method":"changes"}}', i)
+    state.ws:Write(legendMsg)
+    local enabledMsg = string.format('{"subscription":{"path":"/ports/port/%d/enabled","action":"add","method":"changes"}}', i)                                                                             --  1-Enabled
+    state.ws:Write(enabledMsg)	
+    local speedMsg = string.format('{"subscription":{"path":"/ports/port/%d/link_speed","action":"add","method":"changes"}}', i)
+    state.ws:Write(speedMsg)	
+  end
+  local devMsg = '{"subscription":{"path":"/device/name","action":"add","method":"changes"}}'
+  state.ws:Write(devMsg)
+  local descMsg = '{"subscription":{"path":"/device/description","action":"add","method":"changes"}}'
+  state.ws:Write(descMsg)  
+  local actualIPMsg = '{"subscription":{"path":"/device/actual_ip/ip_address","action":"add","method":"changes"}}'
+  state.ws:Write(actualIPMsg)  
+  local prefixLengthMsg = '{"subscription":{"path":"/device/actual_ip/prefix_length","action":"add","method":"changes"}}'
+  state.ws:Write(prefixLengthMsg)   
+  local IPmodeMsg = '{"subscription":{"path":"/ip_settings/mode","action":"add","method":"changes"}}'
+  state.ws:Write(IPmodeMsg)
+  local macMsg = '{"subscription":{"path":"/device/mac_address","action":"add","method":"changes"}}'
+  state.ws:Write(macMsg)
+  local firmMsg = '{"subscription":{"path":"/device/firmware/active","action":"add","method":"changes"}}'
+  state.ws:Write(firmMsg)  
+end
+
+-- For group page
+local MAX_GROUPS = 40
+
+function subscribeAllGroups()
+  if not state.ws then return end
+
+  for i = 1, MAX_GROUPS do
+    -- Subscribe to name
+    local nameMsg = string.format('{"subscription":{"path":"/groups/group/%d/name","action":"add","method":"changes"}}', i)
+    state.ws:Write(nameMsg)
+
+    -- Subscribe to group_id
+    local idMsg = string.format('{"subscription":{"path":"/groups/group/%d/group_id","action":"add","method":"changes"}}', i)
+    state.ws:Write(idMsg)
+  end
+end
+
+
+
+local function openWS(ip)
+  state.baseIP = ip
+
+  if state.ws then
+    state.ws:Close()
+    state.ws = nil
+  end
+
+  state.ws = WebSocket.New()
+
+  state.ws.Connected = function()
+    log("WebSocket Connected => subscribeAllPorts()")
+  
+    updateAuthStatus("Authenticated", "#00A000")  -- green status
+  
+    subscribeAllPorts()
+	subscribeAllGroups()
+    SetDeviceStatus("online")
+  end
+
+  state.ws.Data = function(_, data)
+    log("Data: " .. tostring(data))
+    if data:find('"api_notification"') then
+      parseNotification(data)
+    end
+  end
+
+  state.ws.Error = function(_, err)
+    log("WebSocket Error: " .. (err or "none"))
+	if err and err:find("unauthorized") then
+	  updateAuthStatus("Auth failed", "#C80000")
+	end  
+    SetDeviceStatus("offline")
+    Timer.CallAfter(function() openWS(state.baseIP) end, 5)
+  end
+
+  state.ws.Closed = function()
+    log("WebSocket Closed")
+    SetDeviceStatus("offline")
+    Timer.CallAfter(function() openWS(state.baseIP) end, 5)
+  end
+
+  -- Get credentials from UI
+  local user = Controls["auth_username"] and Controls["auth_username"].String or ""
+  local pass = Controls["auth_password"] and Controls["auth_password"].String or ""
+  local headers = {}
+
+  if user ~= "" and pass ~= "" then
+    local token = Crypto.Base64Encode(user .. ":" .. pass)
+    headers["Authorization"] = "Basic " .. token
+  end
+
+  log("Connecting => ws://" .. ip .. "/api/ws on port 80")
+  state.ws:Connect("ws", ip, "api/ws", 80, nil, headers)
+end
+--------------------------------------------------------------------------------
+-- IP Info 
+--------------------------------------------------------------------------------
+local function updateIPinfo()                             -- To format to: "192.168.10.25/16 (static)" 
+  local ip    = (state.currentIP    ~= "" and state.currentIP)    or "???"
+  local pref  = (state.prefixLength ~= "" and state.prefixLength) or "??"
+  local mode  = (state.ipMode       ~= "" and state.ipMode)       or "???"
+  local combined = string.format("%s/%s (%s)", ip, pref, mode)
+  if Controls["ip_info"] then                               -- Now set the single text control
+    Controls["ip_info"].String = combined
+  end
+end
+--------------------------------------------------------------------------------
+-- Device name and device description
+--------------------------------------------------------------------------------
+local function formatDeviceName(rawName)                      -- Format Device Name/Description
+  if #rawName > 32 then                                       -- more than 32 characters, insert a newline
+    local part1 = string.sub(rawName, 1, 32)
+    local part2 = string.sub(rawName, 33)
+    return part1 .. "\n" .. part2
+  else
+    return rawName
+  end
+end
+local function formatDeviceDesc(rawDesc)
+  if #rawDesc > 32 then
+    local part1 = string.sub(rawDesc, 1, 32)
+    local part2 = string.sub(rawDesc, 33)
+    return part1 .. "\n" .. part2
+  else
+    return rawDesc
+  end
+end
+--------------------------------------------------------------------------------
+-- mac address and firmware
+--------------------------------------------------------------------------------
+local function updateMac_Firmware()                           -- To format to: "d0:69:9e:00:00:00 - 1.6.0" 
+  local mac = state.macAddress ~= "" and state.macAddress or "??:??:??:??:??:??"
+  local firm = state.firmwareVersion ~= "" and state.firmwareVersion or "?.?.?"
+  local combined = string.format("%s  –  %s", mac, firm)
+  if Controls["mac_firmware"] then
+    Controls["mac_firmware"].String = combined
+  end
+end
+--------------------------------------------------------------------------------
+-- updateAuthStatus
+--------------------------------------------------------------------------------
+function updateAuthStatus(text, color)
+  local ctrl = Controls["auth_status"]
+  if not ctrl then return end
+
+  ctrl.String = text
+  ctrl.Color = (text ~= "") and (color or "#800000") or "#00000000"
+end
+
+--------------------------------------------------------------------------------
+-- PoE bounce ⚡ logo show when sourcing
+--------------------------------------------------------------------------------
+function SetPortIndication(port, value)
+  portPoEIndication[port] = value
+
+  local ctrl = Controls["port_bounce_btn_" .. port]
+  if ctrl then
+    if value == "sourcing" then
+      ctrl.Legend = "⚡"
+    else
+      ctrl.Legend = ""
+    end
+  end
+end
+--------------------------------------------------------------------------------
+-- Parse Notifications
+--------------------------------------------------------------------------------
+function parseNotification(raw)
+  log("parseNotification => " .. raw)
+  local path= raw:match('"path"%s*:%s*"([^"]+)"')
+  if not path then return end
+
+  if path:find("/device/name") then
+    local newVal = raw:match('"new_value"%s*:%s*"([^"]+)"')
+    if newVal then
+      local formatted = formatDeviceName(newVal)
+      Controls["device_name"].String = formatted
+    end
+    return
+  end
+
+  if path:find("/device/description") then
+    local newVal = raw:match('"new_value"%s*:%s*"([^"]+)"')
+    if newVal then
+      local formattedDesc = formatDeviceDesc(newVal)
+      Controls["device_description"].String = formattedDesc
+    end
+    return
+  end
+
+  if path:find("/device/mac_address") then
+    local newVal = raw:match('"new_value"%s*:%s*"([^"]+)"')
+    if newVal then
+      state.macAddress = newVal
+      updateMac_Firmware()
+    end
+    return
+  end
+
+  if path:find("/device/firmware/active") then
+    local newVal = raw:match('"new_value"%s*:%s*"([^"]+)"')
+    if newVal then
+      state.firmwareVersion = newVal
+      updateMac_Firmware()
+    end
+    return
+  end
+
+  if path:find("/device/actual_ip/ip_address") then
+    local newVal = raw:match('"new_value"%s*:%s*"([^"]+)"')
+    if newVal then
+      state.currentIP = newVal
+      updateIPinfo()
+    end
+    return
+  end
+
+  if path:find("/device/actual_ip/prefix_length") then
+    local newVal = raw:match('"new_value"%s*:%s*(%d+)')
+    if newVal then
+      state.prefixLength = newVal
+      updateIPinfo()
+    end
+    return
+  end
+
+  if path:find("/ip_settings/mode") then
+    local newVal = raw:match('"new_value"%s*:%s*"([^"]+)"')
+    if newVal then
+      state.ipMode = newVal
+      updateIPinfo()
+    end
+    return
+  end
+
+  -- Handle group name updates                                                                                              ----------------------------
+  if path:find("/groups/group/") and path:find("/name") then
+    local groupId = path:match("/groups/group/(%d+)/name")
+    local newName = raw:match('"new_value"%s*:%s*"([^"]+)"')
+    if groupId and newName then
+      local gid = tonumber(groupId)
+      state.groupNames[gid] = newName
+
+      local ctrl = Controls["group_label_"..gid]
+      if ctrl then
+        SetGroupLabel(gid, newName)
+      end
+    end
+    return
+  end
+
+-- Handle group_id updates
+  if path:match("^/groups/group/%d+/group_id$") then
+    local groupId = tonumber(path:match("/groups/group/(%d+)/group_id"))
+    local newVal = tonumber(raw:match('"new_value"%s*:%s*(%d+)'))
+  
+    if groupId and newVal then
+      state.groupMeta = state.groupMeta or {}
+      state.groupMeta[groupId] = state.groupMeta[groupId] or {}
+      state.groupMeta[groupId].id = newVal
+  
+      updateGroupUI(groupId)  -- 🔁 force layout refresh
+    end
+    return
+  end
+
+
+
+
+  -- Port Enabled state
+  if path:find("/enabled") then
+    local boolStr = raw:match('"new_value"%s*:%s*(%a+)')
+    if boolStr then
+      local port = tonumber(path:match("/port/(%d+)/enabled"))
+      if port and Controls["port_enable_toggle_"..port] then
+        Controls["port_enable_toggle_"..port].Boolean = (boolStr == "true")
+      end
+    end
+    return
+  end
+
+  -- /legend
+  local portStr = path:match("/ports/port/(%d+)/legend")
+  if portStr then
+    local portNum = tonumber(portStr)
+    local newVal  = raw:match('"new_value"%s*:%s*"([^"]+)"')
+    if newVal then
+      local displayCtrl = Controls["port_legend_display_"..portNum]
+      if displayCtrl then
+        local splitVal = newVal
+        if #newVal > 8 then
+          splitVal = newVal:sub(1,8) .. " \n" .. newVal:sub(9)
+        end
+        displayCtrl.String = splitVal
+      end
+
+      local editCtrl = Controls["port_legend_edit_"..portNum]
+      if editCtrl then
+        editCtrl.String = newVal
+      end
+    end
+    return
+  end
+
+  -- link_state
+  local pStr = path:match("/port/(%d+)/") or path:match("/poe/ports/(%d+)/")
+  if not pStr then return end
+  local port = tonumber(pStr)
+
+  if path:find("/link_state") then
+    local newVal = raw:match('"new_value"%s*:%s*"([^"]+)"')
+    if newVal then
+      local isOn = false
+      if newVal ~= "down" and newVal ~= "unknown" then
+        isOn = true
+      end
+      SetPortLink(port, isOn)
+    end
+    return
+  end
+
+  -- member_of
+  if path:find("/member_of") then
+    local obj = raw:match('"new_value"%s*:%s*{(.-)}')
+    if obj then
+      local tVal = obj:match('"type"%s*:%s*"([^"]+)"')
+      local idVal = obj:match('"id"%s*:%s*(%d+)')
+      if tVal and idVal then
+        if tVal == "trunk" then
+          SetPortMemberOf(port, "Trunk: "..idVal)
+        elseif tVal == "group" then
+          SetPortMemberOf(port, "Group: "..idVal)
+        end
+      end
+    else
+      local newValString = raw:match('"new_value"%s*:%s*"([^"]+)"')
+      if newValString then
+        local gId = newValString:match("^group(%d+)$")
+        if gId then
+          SetPortMemberOf(port, "Group: "..gId)
+        elseif newValString == "trunk" then
+          SetPortMemberOf(port, "Trunk")
+        else
+          SetPortMemberOf(port, newValString)
+        end
+      end
+    end
+  end
+
+  -- Indication (PoE)
+  if path:find("/indication") then
+    local newVal = raw:match('"new_value"%s*:%s*"([^"]+)"')
+    if newVal then
+      SetPortIndication(port, newVal)
+    end
+    return
+  end
+
+  -- rlinkx
+  if path:find("/rlinkx") then
+    local obj = raw:match('"new_value"%s*:%s*{(.-)}')
+    if obj then
+      local boolString = obj:match('"enabled"%s*:%s*(%a+)')
+      if boolString then
+        local stateVal = (boolString == "true") and "enabled" or "disabled"
+
+        local label = Controls["rlinkx"..port]
+        if label then
+          label.String = (stateVal == "enabled") and "On" or "Off"
+        end
+
+        SetPortRlinkx(port, stateVal)
+
+        local toggle = Controls["port_rlinkx_toggle_"..port]
+        if toggle then
+          toggle.Boolean = (stateVal == "enabled")
+        end
+      end
+    end
+    return
+  end
+
+  if path:find("/enabled") then
+    local portStr = path:match("/ports/port/(%d+)/enabled")
+    if portStr then
+      local port = tonumber(portStr)
+      local ctrl = Controls["port_speed_dropdown_"..port]
+      if not ctrl then return end
+
+      local val = raw:match('"new_value"%s*:%s*(%a+)')
+      if val == "false" then
+        ctrl.String = "Disabled"
+        state["port_enabled_"..port] = false
+      else
+        state["port_enabled_"..port] = true
+      end
+    end
+    return
+  end
+
+  if path:find("/link_speed") then
+    local portStr = path:match("/ports/port/(%d+)/link_speed")
+    if portStr then
+      local port = tonumber(portStr)
+      local ctrl = Controls["port_speed_dropdown_"..port]
+      if not ctrl then return end
+
+      if state["port_enabled_"..port] == false then
+        return
+      end
+
+      local jsonMode = raw:match('"mode"%s*:%s*"([^"]+)"')
+      local jsonSpeed = raw:match('"speed"%s*:%s*%[%"([^"]+)"%]')
+
+      if jsonMode == "auto" then
+        ctrl.String = "Auto"
+      elseif jsonMode == "fixed" and jsonSpeed then
+        local reverseMap = {
+          ["1gbps fdx"] = "1 Gbps",
+          ["100mbps fdx"] = "100 Mbps (Full-duplex)",
+          ["100mbps hdx"] = "100 Mbps (Half-duplex)",
+          ["10mbps fdx"] = "10 Mbps (Full-duplex)",
+          ["10mbps hdx"] = "10 Mbps (Half-duplex)"
+        }
+        ctrl.String = reverseMap[jsonSpeed] or ""
+      end
+    end
+    return
+  end
+end
+
+--------------------------------------------------------------------------------
+-- Set Port States
+--------------------------------------------------------------------------------
+function SetPortLink(port, isOn)
+  local ctrl=Controls["port"..port]
+  if ctrl then
+    ctrl.Boolean=isOn
+  end
+end
+
+function SetPortMemberOf(port, textVal)
+
+  state.portGroupAssignments = state.portGroupAssignments or {}
+  state.portGroupAssignments[port] = textVal
+
+  local ctrl = Controls["port_group_color_"..port]
+  if ctrl then
+    local color = GROUP_COLORS[textVal]
+    if not color then
+      ctrl.Color = "#00000000"
+      ctrl.String = textVal
+      return
+    end
+  
+    local r, g, b = table.unpack(color)
+    local hex = string.format("#%02X%02X%02X", r, g, b)
+  
+    ctrl.String = textVal
+    ctrl.Color = hex
+  end
+end
+
+function SetPortIndication(port, textVal)
+  local label = Controls["indication"..port]
+  if label then
+    label.String = textVal
+  end
+
+  -- Apply color to poe rectangle
+  local box = Controls["poe_color_"..port]
+  if box then
+    local colorMap = {
+      sourcing = "#FF8000",   -- orange
+      enabled  = "#FFD700",   -- yellow
+      disabled = "#444444",   -- dark gray
+    }
+
+    local color = colorMap[textVal:lower()]
+    if color then
+      box.Color = color
+      box.String = ""
+    else
+      box.Color = "#00000000"
+      box.String = ""
+    end
+  end
+
+  -- Update bounce button legend on Port Settings page                                                                                                               -- BOUNCE
+  local bounce = Controls["port_bounce_btn_" .. port]
+  if bounce then
+    bounce.Legend = (textVal:lower() == "sourcing") and "⚡" or ""
+  end
+end
+
+
+function SetPortRlinkx(port, stateString)
+  local ctrl = Controls["rlinkx_bar_"..port]
+  if ctrl then
+    local colorMap = {
+      enabled = "#00B2FF",  -- blue
+      disabled = "#999999", -- light gray
+    }
+    local color = colorMap[stateString:lower()] or "#00000000"
+    ctrl.Color = color
+    ctrl.String = ""
+  end
+end
+
+function SetDeviceStatus(state)
+  local ctrl = Controls["device_status"]
+  if not ctrl then return end
+
+  if state == "online" then
+    if offlinePulseTimer then
+      offlinePulseTimer:Stop()
+      offlinePulseTimer = nil
+    end
+    pulseOn = false
+    ctrl.String = "Online"
+    ctrl.Color = "#00C800"  -- green
+
+  elseif state == "offline" then
+    ctrl.String = "Offline"
+
+    if not offlinePulseTimer then
+      offlinePulseTimer = Timer.New()
+      offlinePulseTimer.EventHandler = function()
+        pulseOn = not pulseOn
+        ctrl.Color = pulseOn and "#C80000" or "#800000"  -- bright red / dim red
+      end
+      offlinePulseTimer:Start(0.5)
+    end
+  end
+end
+--------------------------------------------------------------------------------
+-- Set Group States
+--------------------------------------------------------------------------------
+-- Set group label based on name and optional group_id
+function SetGroupLabel(groupId, name)
+  local ctrl = Controls["group_label_" .. groupId]
+  if not ctrl then return end
+
+  -- Add group ID to label if known
+  local groupMeta = state.groupMeta and state.groupMeta[groupId]
+  local id = groupMeta and groupMeta.id
+
+  local label = name
+  if id then
+    label = name .. "\n#" .. tostring(id)
+  end
+
+  -- Color lookup
+  local color = GROUP_COLORS["Group: " .. groupId]
+  if not color then
+    ctrl.Color = "#00000000"
+    ctrl.String = label
+    return
+  end
+
+  local r, g, b = table.unpack(color)
+  local hex = string.format("#%02X%02X%02X", r, g, b)
+
+  ctrl.String = label
+  ctrl.Color = hex
+end
+
+-- Utility: Redraw group page if visible
+function updateGroupUI(groupId)
+  if currentPage == "Groups" then
+    RedrawControls() -- forces full re-layout if we're on the Groups page
+  end
+end
+
+--------------------------------------------------------------------------------
+-- Q-SYS Properties / Pages / Color
+--------------------------------------------------------------------------------
+function GetColor(props)
+  return {15,58,83}                  -- plugin tile color in the Q-SYS Inventory
+end
+
+function GetPrettyName(props)
+  return PluginInfo.Name.." v"..PluginInfo.Version
+end
+
+function GetProperties(props)
+  local modelChoices = {}
+  for modelName, _ in pairs(GigaCoreModels) do
+    table.insert(modelChoices, modelName)
+  end
+  table.sort(modelChoices)
+
+  return {
+    {
+      Name    = "Model",
+      Type    = "enum",
+      Choices = modelChoices,
+      Value   = "GigaCore 30i"
+    },
+    {
+      Name    = "Dark Mode",
+      Type    = "enum",
+      Choices = { "Yes", "No" },
+      Value   = "No"
+    }
+  }
+end
+
+
+function GetControls(props)
+  local modelProp = props["Model"]
+  local modelString = (type(modelProp) == "table") and modelProp.Value or modelProp
+  modelString = modelString or "GigaCore 30i"
+  -- call the function to get the correct portCount
+  local portCount = getPortCount(modelString)
+  local c = {}  
+
+  for p = 1, portCount do
+     -- Control page (read-only Ports status) 
+    c[#c+1] = {
+      Name        = "port"..p,
+      ControlType = "Button",
+      ButtonType  = "Toggle",
+      PinStyle    = "Output",
+      UserPin     = true,
+      IsReadOnly  = true,
+    }
+    -- Control page (read-only group/vlan color)	
+    c[#c+1] = {
+      Name         = "port_group_color_"..p,
+      ControlType  = "Text",
+      TextBoxType  = "ReadOnly",
+      PinStyle    = "Output",
+      UserPin     = true,	  
+      IsReadOnly   = false,
+      Value        = "",
+    }	
+    -- Control page (read-only PoE)	
+    c[#c+1] = {
+      Name        = "indication"..p,
+      ControlType = "Text",
+      TextBoxType = "ReadOnly",
+      PinStyle    = "Output",
+      UserPin     = true,
+      Value       = "",
+    }
+    -- Control page (read-only PoE)	
+    c[#c+1] = {
+      Name         = "poe_color_"..p,
+      ControlType  = "Text",
+      TextBoxType  = "ReadOnly",
+      PinStyle    = "Output",
+      UserPin     = true,	  
+      IsReadOnly   = false,
+      Value        = "",
+    }
+    -- Control page (read-only RlinkX)
+    c[#c+1] = {
+      Name        = "rlinkx_bar_"..p,
+      ControlType = "Text",
+      TextBoxType = "ReadOnly",
+      PinStyle    = "Output",
+      UserPin     = true,	  
+      IsReadOnly  = false,
+      Value       = "",
+    }
+    -- Control page (read-only display with line split)
+    c[#c+1] = {
+      Name        = "port_legend_display_"..p,
+      ControlType = "Text",
+      TextBoxType = "ReadOnly",
+      PinStyle    = "Output",
+      UserPin     = true,
+      IsReadOnly  = true,
+      Value       = "",
+    }   
+	
+    -- Port settings page (Enable/Disabled port toggle's)                                                                               -- Enabled
+    c[#c+1] = {
+      Name        = "port_enable_toggle_"..p,
+      ControlType = "Button",
+      ButtonType  = "Toggle",
+      PinStyle    = "Input",
+      UserPin     = true,
+    }
+
+    -- Port settings page (editable legend input)
+    c[#c+1] = {
+      Name        = "port_legend_edit_"..p,
+      ControlType = "Text",
+      TextBoxType = "Normal",
+      PinStyle    = "Output",
+      UserPin     = true,
+      IsReadOnly  = false,
+      Value       = "",
+    }
+    -- Port settings page (toggle for rlinkX)                                                                                                -- 3 RlinkX
+    c[#c+1] = {
+      Name        = "port_rlinkx_toggle_"..p,
+      ControlType = "Button",
+      ButtonType  = "Toggle",
+      PinStyle    = "Input",
+      UserPin     = true,
+    }
+    -- Port settings page (Momentary for PoE Bounce)                                                                                                                 -- Bounce
+    c[#c+1] = {
+      Name        = "port_bounce_btn_"..p,
+      ControlType = "Button",
+      ButtonType  = "Momentary",
+      PinStyle    = "Input",
+      UserPin     = true,
+    }
+    -- Port settings page (dropdown for Port speed)	
+    c[#c+1] = {
+      Name        = "port_speed_dropdown_"..p,
+      ControlType = "Text",
+      TextBoxType = "ComboBox",
+      PinStyle    = "Input",
+      UserPin     = true,
+      Choices     = {
+        "Auto",
+        "Disabled",
+        "1 Gbps",
+        "100 Mbps (Full-duplex)",
+        "100 Mbps (Half-duplex)",
+        "10 Mbps (Full-duplex)",
+        "10 Mbps (Half-duplex)"
+      },
+      Value = "Auto"
+    }	
+	
+  end
+-- Group Page
+  for i = 1, 20 do
+    c[#c+1] = {
+      Name         = "group_label_"..i,
+      ControlType  = "Text",
+      TextBoxType  = "ReadOnly",
+      PinStyle     = "None",
+      UserPin      = false,
+      IsReadOnly   = true,
+      Value        = ""
+    }
+  end
+--  SHOW ON ALL PAGES
+  c[#c+1] = {
+    Name        = "device_name",
+    ControlType = "Text",
+    TextBoxType = "ReadOnly",
+    PinStyle    = "Output",
+    UserPin     = true,
+    Value       = "",
+    MultiLine   = true, 	
+  }
+  
+  c[#c+1] = {
+    Name        = "device_description",
+    TextBoxType = "ReadOnly",
+    PinStyle    = "Output",
+    UserPin     = true,
+    Value       = "",
+    MultiLine   = true, 	
+  }
+  
+  c[#c+1] = {                            --IP in the main page
+    Name        = "ip_info",
+    TextBoxType = "ReadOnly",
+    PinStyle    = "Output",
+    UserPin     = true,
+    Value       = "",
+  }
+ 
+  c[#c+1] = {
+    Name        = "mac_firmware",
+    ControlType = "Text",
+    TextBoxType = "ReadOnly",
+    PinStyle    = "Output",
+    UserPin     = true,
+    Value       = "",
+  }
+
+  c[#c+1] = {
+    Name        = "device_status",
+    ControlType = "Text",
+    TextBoxType = "ReadOnly",
+    PinStyle    = "Output",
+    UserPin     = true,	  
+    IsReadOnly  = false,
+    Value       = "Offline"
+  }
+-- Configuration Page 
+  c[#c+1] = {                          --IP in the configuration page
+    Name        = "ip_addr",
+    ControlType = "Text",
+    TextBoxType = "Normal",
+    PinStyle    = "Input",
+    UserPin     = true,
+    Value       = "Enter your IP",
+  }
+ 
+  c[#c+1] = {
+    Name        = "auth_username",
+    ControlType = "Text",
+    TextBoxType = "Normal",
+    PinStyle    = "Input",
+    UserPin     = true,
+    Value       = ""
+  }
+  
+  c[#c+1] = {
+    Name        = "auth_password",
+    ControlType = "Text",
+    TextBoxType = "Password",
+    PinStyle    = "Input",
+    UserPin     = true,
+    Value       = ""
+  }
+
+  c[#c+1] = {
+    Name        = "auth_status",
+    ControlType = "Text",
+    TextBoxType = "ReadOnly",
+    PinStyle    = "Output",
+    UserPin     = true,
+    Value       = "",
+	
+  }
+
+  c[#c+1] = {
+    Name        = "connect",
+    ControlType = "Button",
+    ButtonType  = "Toggle",
+    PinStyle    = "Input",
+    UserPin     = true,
+  }
+  
+  c[#c+1] = {
+    Name        = "identify",
+    ControlType = "Button",
+    ButtonType  = "Momentary",
+    PinStyle    = "Input",
+    UserPin     = true,
+  }  
+-- Testing Page 
+  c[#c+1] = {
+    Name        = "test_dropdown",
+    ControlType = "Text",
+    TextBoxType = "ComboBox",
+    PinStyle    = "Input",
+    UserPin     = true,
+    Choices     = {
+      "Auto",
+      "Disabled",
+      "1 Gbps",
+      "100 Mbps (Full-duplex)",
+      "100 Mbps (Half-duplex)",
+      "10 Mbps (Full-duplex)",
+      "10 Mbps (Half-duplex)"
+    },
+    Value       = "Auto"
+  } 
+  
+-- Port setting page  
+  c[#c+1] = {
+    Name        = "poe_bounce_delay",
+    ControlType = "Text",
+	TextBoxType = "TextBox",
+    PinStyle    = "None",
+    IsReadOnly  = false,
+    Default     = "3"
+  }
+  
+  return c
+end
+
+
+function RectifyProperties(props)
+  log("RectifyProperties called")
+  local modelString = props["Model"]
+  local darkModeChoice = props["Dark Mode"]
+
+  state.portCount = getPortCount(modelString)
+
+  props.RebuildGUI = true  -- ensures layout is rebuilt with new theme
+  return props
+end
+
+
+function updateCombinedIP()                 -- Rebuilds the string "ip/prefix(mode)" and updates "actual_ip" text
+  local combined = storedIP
+  if storedPrefix ~= "" then
+    combined = combined .. "/" .. storedPrefix
+  end
+  if storedIPmode ~= "" then
+    combined = combined .. "(" .. storedIPmode .. ")"
+  end
+end
+--------------------------------------------------------------------------------
+-- Build the dynamic pages
+--------------------------------------------------------------------------------
+function GetPages(props)
+  local modelProp = props["Model"]
+  local modelString = (type(modelProp) == "table") and modelProp.Value or "GigaCore 30i"
+  local pages = {}
+
+  table.insert(pages, { name = modelString })             -- use the model name for the page directly
+  table.insert(pages, { name = "Port settings" })
+  table.insert(pages, { name = "Groups" })  
+  table.insert(pages, { name = "Configuration" })  
+--  table.insert(pages, { name = "Testing" })
+
+  return pages
+end
+--------------------------------------------------------------------------------
+-- Build the 30-port (etc.) "Controls" page
+--------------------------------------------------------------------------------
+local function defineSinglePort(layout, gfx, portIndex, xPos, yPos, w, h)
+  local gap       = 2           -- vertical gap between blocks
+  local btnH      = h           -- main port button height
+  local poeH      = 8
+  local groupH    = 14
+  local legendH   = 28
+  local rlinkxH   = 20
+  local nextY = yPos
+  nextY = nextY + btnH + gap
+
+  -- Legend box (with split text)
+  layout["port_legend_display_"..portIndex] = {
+    Style        = "Text",
+    Position     = {xPos + 4, nextY - 1},
+    Size         = {w - 8, legendH},
+    FontSize     = 11,
+    Font         = "Roboto",
+    Color        = {0, 0, 0, 0},
+    StrokeWidth  = 0,
+    StrokeColor  = {0, 0, 0, 0},
+    TextColor    = {255, 255, 255},
+    HTextAlign   = "Center",
+    VTextAlign   = "Top",
+    IsReadOnly   = true,
+  }
+
+  nextY = nextY + legendH + gap
+
+  layout["port_group_color_"..portIndex] = {
+    Style           = "Text",
+    Position        = {xPos + 4, nextY - 4},
+    Size            = {w - 8, groupH},
+    IsReadOnly      = true,
+    FontSize        = 11,
+    Color           = {0, 0, 0, 0},
+    StrokeWidth     = 0,
+    StrokeColor     = {0, 0, 0, 0},
+	Font            = "Roboto",
+    HTextAlign      = "Center",
+    VTextAlign      = "Center",
+	BackgroundColor = {25, 28, 42, 220},
+	CornerRadius    = 6,
+  }
+
+  nextY = nextY + groupH + gap
+  
+ layout["poe_color_"..portIndex] = {
+    Style        = "Text",
+    Position     = {xPos + (w - 14) // 2, yPos - poeH + 3},
+    Size         = {14, poeH},
+    FontSize     = 1,
+    IsReadOnly   = true,
+    Color        = {0, 0, 0, 0},
+    TextColor    = {0, 0, 0, 0},	
+    StrokeWidth  = 0,
+    CornerRadius = 2,	
+    HTextAlign   = "Center",
+    VTextAlign   = "Center",	
+  }
+  
+  layout["rlinkx_bar_"..portIndex] = {
+    Style        = "Text",
+    Position     = {xPos + 15, yPos + h - 5},
+    Size         = {w - 30, 3},
+    FontSize     = 1,
+    IsReadOnly   = true,
+    Color        = {0, 0, 0, 0},
+    TextColor    = {0, 0, 0, 0},
+    StrokeWidth  = 0,
+    CornerRadius = 2,
+    HTextAlign   = "Center",
+    VTextAlign   = "Center",
+  }
+end
+
+  --  Luminex logo
+local function drawCommonLogos(gfx)
+  local lumX, lumY   = 5, 5
+  local lumW, lumH   = 119, 36
+  gfx[#gfx+1] = {
+    Type     = "Svg",
+    Image    = LogoLuminex,
+    Position = { lumX, lumY },
+    Size     = { lumW, lumH },
+  }
+  
+  local lumCenterX   = lumX + (lumW / 2) 
+  local lumBottomY = lumY + lumH 
+  
+  return lumCenterX, lumBottomY
+end
+
+
+local function defineCommonDeviceInfo(layout, gfx, theme, lumCenterX, ipSpacing)
+  -- compute ipX, ipY for "ip_info"
+  local ipW, ipH = 140, 18 
+  local ipX = 69                    --ip position
+  local ipY = 250
+
+  local macFW_W, macFW_H = 140, 18
+  local macFW_X = ipX + ipW + 20
+  local macFW_Y = ipY
+
+  layout["device_name"] = {
+    Style           = "Indicator",
+    Position        = {146, 11},
+    Size            = {160, 40},	
+    IsReadOnly      = true,	
+    Color           = theme.indicatorFill,
+    StrokeColor     = theme.strokeColor,
+    StrokeWidth     = 0,
+    TextColor       = theme.textColor,
+    HTextAlign      = "Left",
+    VTextAlign      = "Top",	
+    FontSize        = 11,
+    Font            = "Roboto",
+	CornerRadius    = 1,
+  }
+  
+  layout["device_description"] = {
+    Style           = "Indicator",
+    Position        = {315, 11},
+    Size            = {160, 40},
+    IsReadOnly      = true,
+    Color           = theme.indicatorFill,
+    StrokeColor     = theme.strokeColor,
+    StrokeWidth     = 0,	
+    TextColor       = theme.textColor,
+    HTextAlign      = "Left",
+    VTextAlign      = "Top",	
+    FontSize        = 11,
+    Font            = "Roboto",
+	CornerRadius    = 1,
+  }
+ 
+  layout["ip_info"] = {
+    Style           = "Indicator",
+    Position        = { ipX, ipY },
+    Size            = { ipW, ipH },
+    IsReadOnly      = true,
+    Color           = theme.indicatorFill,
+    StrokeColor     = theme.strokeColor,
+    StrokeWidth     = 0,	                                               
+    TextColor       = theme.textColor,
+    FontSize        = 11,
+    Font            = "Roboto",
+    HTextAlign      = "Left",
+	CornerRadius    = 1,
+  }  
+
+  layout["mac_firmware"] = {
+    Style           = "Indicator",
+    Position        = {macFW_X, macFW_Y},
+    Size            = {macFW_W, macFW_H},
+    IsReadOnly      = true,
+    Color           = theme.indicatorFill,
+    StrokeColor     = theme.strokeColor,
+    StrokeWidth     = 0,	
+    TextColor       = theme.textColor,
+    FontSize        = 11,
+    Font            = "Roboto",	
+    HTextAlign      = "Left",
+	CornerRadius    = 1,
+  }
+  
+  layout["device_status"] = {
+    Style        = "Text", 
+    Position     = {10, 250},
+    Size         = {50, 18},
+    IsReadOnly   = true,
+    Color        = {0, 0, 0, 0},
+    Font         = "Roboto",
+    FontSize     = 11,
+    TextColor    = {255, 255, 255},
+    StrokeWidth  = 0,
+	CornerRadius = 6,	
+    HTextAlign   = "Center",
+    VTextAlign   = "Center",
+    Legend       = "Status"
+  } 
+end
+--------------------------------------------------------------------------------
+-- Build Controls Page 
+--------------------------------------------------------------------------------
+function buildControlsPage(layout, gfx, portCount)
+  local columns = math.ceil(portCount / 2)
+  local btnW, btnH = 66, 44
+  local colSpacing = 5
+  local rowGap = 60
+  local sideMargin = SIDE_MARGIN
+  local totalPortsW = columns * btnW + (columns - 1) * colSpacing
+  local totalW = totalPortsW + sideMargin * 2
+  local totalH = 275
+  local topY = 50
+  local botY = topY + btnH + rowGap
+  local startX = sideMargin
+  local portIndex = 1
+  local theme = getThemeColors()
+
+  gfx[#gfx+1] = {
+    Type        = "Groupbox",
+    Fill        = theme.groupboxFill,
+    StrokeColor = GROUPBOX_STROKE_COLOR,
+    StrokeWidth = GROUPBOX_STROKE_WIDTH,
+    Position    = GROUPBOX_POSITION,
+    Size        = {totalW + GROUPBOX_EXTRA_PADDING, totalH},
+  }
+
+  -- Luminex Logo and Device Info
+  local lumCenterX, ipY = drawCommonLogos(gfx)
+  defineCommonDeviceInfo(layout, gfx, theme, lumCenterX, ipY + -5)
+
+  -- Draw Ports
+  for c = 0, columns-1 do
+    if portIndex > portCount then break end
+    local xPos = startX + c*(btnW+colSpacing)
+    local yPos = topY
+
+    gfx[#gfx+1] = {
+      Type = "Rectangle",
+      Position = {xPos + 1, yPos + 1},
+      Size = {btnW - 2, 88},
+      Fill = theme.rectangleFill,
+      StrokeColor = {0, 0, 0, 60},
+      StrokeWidth = 1,
+      CornerRadius = 14
+    }
+
+    -- Big Button for Link State
+    layout["port"..portIndex] = {
+      Style       = "Button",
+	  ButtonStyle = "Toggle",
+      ButtonVisualStyle  = "Flat",
+      Position    = {xPos, yPos},
+      Size        = {btnW, btnH},
+      IsReadOnly  = true, 	 	  
+      Color       = LINK_ON,
+      OffColor    = LINK_OFF,
+      StrokeColor = {100, 100, 100, 120}, 
+      StrokeWidth = 2,
+      CornerRadius= 14,
+    }
+
+    -- Port Number Text on Top
+    gfx[#gfx+1] = {
+      Type       = "Text",
+      Text       = tostring(portIndex),
+      Color      = {200, 200, 200, 255},
+      Position   = {xPos, yPos},
+      Size       = {btnW, btnH},  
+      Font       = "Roboto",
+      FontSize   = 23,
+      HTextAlign = "Center",	  
+	  IsBold     = true,  	  
+    }
+
+    -- Draw MemberOf / PoE / Rlinkx small indicators
+    defineSinglePort(layout, gfx, portIndex, xPos, yPos, btnW, btnH)
+
+    portIndex = portIndex + 1
+    if portIndex > portCount then break end
+
+    -- Bottom row
+    xPos = startX + c*(btnW+colSpacing)
+    yPos = botY	
+	
+    gfx[#gfx+1] = {
+      Type         = "Rectangle",
+      Position     = {xPos + 1, yPos + 1},
+      Size         = {btnW - 2, 88},
+      Fill         = theme.rectangleFill,
+      StrokeColor  = {0, 0, 0, 60},
+      StrokeWidth  = 1,
+      CornerRadius = 14
+    }		
+	
+    layout["port"..portIndex] = {
+      Style       = "Button",
+	  ButtonStyle = "Toggle",
+      ButtonVisualStyle  = "Flat",
+      Position   = {xPos, yPos},
+      Size       = {btnW, btnH},
+      IsReadOnly = true,	  
+      Color      = LINK_ON,
+      OffColor   = LINK_OFF,
+      StrokeColor = {100, 100, 100, 120},
+      StrokeWidth = 2,
+      CornerRadius= 14,
+
+    }
+
+    gfx[#gfx+1] = {
+      Type      = "Text",
+      Text      = tostring(portIndex),
+      Color     = {200, 200, 200, 255},
+      Position  = {xPos, yPos},
+      Size      = {btnW, btnH},	  
+      Font      = "Roboto",
+      FontSize  = 23,
+      HTextAlign= "Center",
+	  IsBold      = true,  	  
+    }
+
+    defineSinglePort(layout, gfx, portIndex, xPos, yPos, btnW, btnH)
+
+    portIndex = portIndex + 1
+  end
+end
+
+
+-- ========== Port settings page ========== 
+function buildPortSettingsPage(layout, gfx, props)
+  local model = props["Model"] and props["Model"].Value or "GigaCore 30i"
+  local portCount = getPortCount(model)
+  local rows = 8
+  local columns = math.ceil(portCount / rows)
+
+  -- Sizing
+  local toggleW   = 22                   -- Width of the port enable toggle
+  local labelW    = 17                   -- Width of the port number label
+  local boxW      = 100                  -- Width of the legend edit field
+  local rlinkxW   = 22                   -- Width of the RLinkX toggle button
+  local bounceW   = 22                   -- Width of the PoE bounce button
+  local dropdownW = 84                   -- Width of the link speed dropdown
+  local gap       = 0                    -- Default horizontal spacing between most elements
+--  local compactGap = -4                   -- Smaller spacing between enable toggle and port label         Enable button and label    
+
+  -- Recalculate column width
+  
+          -- [Enable Btn] → [Port # Label] → [Legend TextBox] → [RLinkX Toggle] → [PoE Bounce Btn] → [Link Speed Dropdown]
+  local colW = labelW + toggleW + boxW + rlinkxW + bounceW + dropdownW + (gap * 5)
+
+--  local colW = toggleW + compactGap + labelW + gap + boxW + gap + rlinkxW + gap + bounceW + gap + dropdownW
+  local cSpace = colW + 2
+  local boxH = 18                        -- Height of all horizontal rows
+  local rSpace = 22                      -- Vertical spacing between rows (per port)
+  local startX = 2                       -- Starting top-left position for layout columns and rows
+  local startY = 50                      -- Starting top-left position for layout columns and rows
+
+  local totalW = columns * cSpace + startX
+  local totalH = 275
+
+  local theme = getThemeColors()
+
+  gfx[#gfx+1] = {
+    Type        = "Groupbox",
+    Fill        = theme.groupboxFill,
+    StrokeColor = GROUPBOX_STROKE_COLOR,
+    StrokeWidth = GROUPBOX_STROKE_WIDTH,
+    Position    = GROUPBOX_POSITION,
+    Size        = {totalW + GROUPBOX_EXTRA_PADDING, totalH},
+  }
+
+  local lumCenterX, ipY = drawCommonLogos(gfx)
+  defineCommonDeviceInfo(layout, gfx, theme, lumCenterX, ipY)
+
+  -- PoE Bounce Delay Field
+  layout["poe_bounce_delay"] = {
+    Style           = "TextBox",
+    Position        = {379, 250},
+    Size            = {60, 22},
+    FontSize        = 10,
+    Label           = "Bounce (s)",
+    ShowLabel       = true,
+    HTextAlign      = "Center",
+    TextColor       = {0, 0, 0},
+    BackgroundColor = {40, 40, 40},
+    CornerRadius    = 3,
+    StrokeWidth     = 1
+  }
+
+  -- Per-port Controls
+  local p = 1
+  for col = 0, columns - 1 do
+    for row = 0, rows - 1 do
+      if p > portCount then break end
+
+      local y = startY + row * rSpace
+      local x = startX + col * cSpace
+
+      -- Horizontal positioning
+      local labelX   = x
+      local enableX  = labelX + labelW + gap
+      local legendX  = enableX + toggleW + gap
+      local rlinkxX  = legendX + boxW + gap
+      local bounceX  = rlinkxX + rlinkxW + gap
+      local speedX   = bounceX + bounceW + gap
+
+
+      layout["port_enable_toggle_"..p] = {
+        Style         = "Button",
+        ButtonStyle   = "Toggle",
+        Position      = {enableX - 2, y},
+        Size          = {toggleW, boxH},
+        FontSize      = 10,
+        TextColor     = {255, 255, 255},
+        Color         = {30, 200, 60},
+        OffColor      = {0, 0, 0},
+        CornerRadius  = 2,		
+        HTextAlign    = "Center",
+        VTextAlign    = "Center",
+        ButtonVisualStyle   = "Flat",		
+        Legend        = ""
+      }
+
+      gfx[#gfx+1] = {
+        Type       = "Text",
+        Text       = tostring(p),
+        Position   = {labelX, y},
+        Size       = {labelW, boxH},
+        Font       = "Roboto",
+        FontSize   = 11,
+        Color      = {180, 255, 255},
+        HTextAlign = "Center",
+        VTextAlign = "Center"
+      }
+
+      layout["port_legend_edit_" .. p] = {
+        Style           = "TextBox",
+        Position        = {legendX -1, y},
+        Size            = {boxW, boxH},
+        Font            = "Roboto",
+        FontSize        = 11,
+        HTextAlign      = "Left",
+        TextColor       = theme.textboxColor,
+        BackgroundColor = theme.textboxBg,
+        StrokeWidth     = 0,
+        CornerRadius    = 1
+      }
+
+      layout["port_rlinkx_toggle_" .. p] = {
+        Style         = "Button",
+        ButtonStyle   = "Toggle",
+        Position      = {rlinkxX, y},
+        Size          = {rlinkxW, boxH},
+--        FontSize      = 10,
+--        TextColor     = {255, 255, 255},
+        Color         = {0, 200, 255},
+        CornerRadius  = 2,		
+        OffColor      = {40, 40, 40},
+        HTextAlign    = "Center",
+        VTextAlign    = "Center",
+        ButtonVisualStyle   = "Flat",		
+        Legend        = ""
+      }
+
+      layout["port_bounce_btn_" .. p] = {
+        Style               = "Button",
+        ButtonStyle         = "Momentary",		
+        Position            = {bounceX, y},
+        Size                = {bounceW, boxH},
+        String              = "",
+        Color               = {180, 30, 30},
+        CornerRadius        = 2,
+--        StrokeColor         = {100, 100, 100},
+--        StrokeWidth         = 1,
+        ButtonVisualStyle   = "Flat"
+      }
+
+      layout["port_speed_dropdown_" .. p] = {
+        Style           = "ComboBox",
+        Position        = {speedX, y},
+        Size            = {dropdownW, boxH},
+        Font            = "Roboto",
+        FontSize        = 11,
+        TextColor       = {0, 0, 0},
+        BackgroundColor = {20, 24, 40},
+        IsReadOnly      = false,
+        StrokeWidth     = 0,
+        CornerRadius    = 1		
+      }
+
+      p = p + 1
+    end
+  end
+end
+
+
+
+
+
+-- ========== Configuration page ==========
+function buildConfigurationPage(layout, gfx, props)
+  local theme = getThemeColors()
+
+  local totalW  = 475
+  local totalH  = 275
+
+  gfx[#gfx+1] = {
+    Type        = "Groupbox",
+    Fill        = theme.groupboxFill,
+    StrokeColor = {0, 0, 0},
+    StrokeWidth = 0,
+    Position    = {0, 0},
+    Size        = {totalW, totalH},
+  }
+
+  local lumCenterX, ipY = drawCommonLogos(gfx)
+  defineCommonDeviceInfo(layout, gfx, theme, lumCenterX, ipY)
+
+  local labelX   = 30
+  local inputX   = 110
+  local rowY     = 90
+  local rowGap   = 40
+  local boxW     = 140
+  local boxH     = 24
+  local labelW   = 70
+
+  local connectX = 270
+  local btnW     = 120
+  local btnH     = 30
+
+  -- Label: IP Address
+  gfx[#gfx+1] = {
+    Type       = "Text",
+    Text       = "IP Address",
+    Position   = {labelX, rowY + 0},
+    Size       = {labelW, boxH},
+    Font       = "Roboto",
+    FontSize   = 10,
+    Color      = theme.labelGray,
+    HTextAlign = "Right",
+    VTextAlign = "Center"
+  }
+
+  layout["ip_addr"] = {
+    Style           = "TextBox",
+    Position        = {inputX, rowY + 0},
+    Size            = {boxW, boxH},
+    Font            = "Roboto",
+    FontSize        = 14,
+    HTextAlign      = "Left",
+    TextColor       = theme.textboxColor,
+    BackgroundColor = theme.textboxBg
+  }
+
+  layout["connect"] = {
+    Legend           = "Connect",
+    Style            = "Button",
+    ButtonStyle      = "Momentary",
+    Color            = {0, 255, 0},
+    OffColor         = theme.buttonOffColor,
+    Position         = {connectX, rowY},
+    Size             = {btnW, btnH},
+    Font             = "Roboto",
+    FontSize         = 13,
+    HTextAlign       = "Center",
+  }
+
+  -- Label: Username
+  gfx[#gfx+1] = {
+    Type       = "Text",
+    Text       = "Username",
+    Position   = {labelX, rowY + rowGap},
+    Size       = {labelW, boxH},
+    Font       = "Roboto",
+    FontSize   = 10,
+    Color      = theme.labelGray,
+    HTextAlign = "Right",
+    VTextAlign = "Center"
+  }
+
+  layout["auth_username"] = {
+    Style           = "TextBox",
+    Position        = {inputX, rowY + rowGap},
+    Size            = {boxW, boxH},
+    Font            = "Roboto",
+    FontSize        = 14,
+    HTextAlign      = "Left",
+    TextColor       = theme.textboxColor,
+    BackgroundColor = theme.textboxBg
+  }
+
+  layout["identify"] = {
+    Legend           = "Identify",
+    Style            = "Button",
+    ButtonStyle      = "Momentary",
+    Color            = {0, 150, 255},
+    OffColor         = {30, 30, 30},
+    Position         = {connectX, rowY + rowGap},
+    Size             = {btnW, btnH},
+    Font             = "Roboto",
+    FontSize         = 13,
+    HTextAlign       = "Center",
+  }
+
+  -- Label: Password
+  gfx[#gfx+1] = {
+    Type       = "Text",
+    Text       = "Password",
+    Position   = {labelX, rowY + rowGap * 2},
+    Size       = {labelW, boxH},
+    Font       = "Roboto",
+    FontSize   = 10,
+    Color      = theme.labelGray,
+    HTextAlign = "Right",
+    VTextAlign = "Center"
+  }
+
+  layout["auth_password"] = {
+    Style           = "TextBox",
+    IsPassword      = true,
+    Position        = {inputX, rowY + rowGap * 2},
+    Size            = {boxW, boxH},
+    Font            = "Roboto",
+    FontSize        = 14,
+    HTextAlign      = "Left",
+    TextColor       = theme.textboxColor,
+    BackgroundColor = theme.textboxBg
+  }
+
+  -- Auth status box
+  layout["auth_status"] = {
+    Style        = "Text",
+    Position     = {connectX, rowY + rowGap * 2},
+    Size         = {btnW, boxH},
+    Font         = "Roboto",
+    FontSize     = 11,
+    TextColor    = {255, 255, 255},
+    StrokeWidth  = 0,	
+    Color        = {0, 0, 0, 0},
+    HTextAlign   = "Center",
+    VTextAlign   = "Center",
+    IsReadOnly   = true,
+    Legend       = "Auth Status"
+  }  
+end
+-- ========== Group/Trunk settings page ==========
+function buildGroupTrunkSettingsPage(layout, gfx, props)
+  local theme = getThemeColors()
+
+  gfx[#gfx+1] = {
+    Type        = "Groupbox",
+    Fill        = theme.groupboxFill,
+    StrokeColor = GROUPBOX_STROKE_COLOR,
+    StrokeWidth = GROUPBOX_STROKE_WIDTH,
+    Position    = GROUPBOX_POSITION,
+    Size        = {540, 275}
+  }
+
+  local lumCenterX, ipY = drawCommonLogos(gfx)
+  defineCommonDeviceInfo(layout, gfx, theme, lumCenterX, ipY)
+
+  -- Layout grid parameters
+  local boxW, boxH     = 96, 36
+  local gapX, gapY     = 10, 12
+  local startX, startY = 10, 50
+  local columns        = 5
+
+  -- Determine max group count based on known groupNames
+  local maxGroupId = 20
+  for i, _ in pairs(state.groupNames or {}) do
+    if i > maxGroupId then maxGroupId = i end
+  end
+
+  -- Draw group blocks
+  for i = 1, maxGroupId do
+    local col = (i - 1) % columns
+    local row = math.floor((i - 1) / columns)
+    local x = startX + col * (boxW + gapX)
+    local y = startY + row * (boxH + gapY)
+
+    local name = state.groupNames[i] or ("Group " .. i)
+    local groupData = state.groupMeta and state.groupMeta[i]
+    local groupIdVal = groupData and groupData.id
+
+    local label = name
+    if groupIdVal then
+      label = name .. "\n#" .. tostring(groupIdVal)
+    end
+
+    local colorTable = GROUP_COLORS["Group: " .. i]
+    local hexColor = colorTable and string.format("#%02X%02X%02X", table.unpack(colorTable)) or "#202020"
+
+    layout["group_label_" .. i] = {
+      Style           = "Text",
+      Position        = {x, y},
+      Size            = {boxW, boxH},
+      IsReadOnly      = true,
+      Multiline       = true,
+      FontSize        = 12,
+      Font            = "Roboto",
+      Color           = hexColor,
+      TextColor       = {255, 255, 255},
+      BackgroundColor = {25, 28, 42, 220},
+      StrokeWidth     = 0,
+      CornerRadius    = 6,
+      HTextAlign      = "Center",
+      VTextAlign      = "Center",
+      String          = label
+    }
+
+    -- Group ID badge (shows even if ID not yet available)
+    layout["group_id_badge_" .. i] = {
+      Style           = "Text",
+      Position        = {x + boxW - 18, y + 2},
+      Size            = {16, 12},
+      FontSize        = 8,
+      TextColor       = {255, 255, 255},
+      BackgroundColor = {0, 0, 0},
+      CornerRadius    = 2,
+      StrokeWidth     = 1,
+      HTextAlign      = "Center",
+      VTextAlign      = "Center",
+      String          = groupIdVal and tostring(groupIdVal) or ""
+    }
+  end
+end
+
+
+
+-- ========== Testing page ==========
+--function buildTestingPage(layout, gfx, props)
+--  local theme = getThemeColors()
+--
+--  -- Groupbox background
+--  gfx[#gfx+1] = {
+--    Type        = "Groupbox",
+--    Fill        = theme.groupboxFill,
+--    StrokeColor = GROUPBOX_STROKE_COLOR,
+--    StrokeWidth = GROUPBOX_STROKE_WIDTH,
+--    Position    = GROUPBOX_POSITION,
+--    Size        = {900, 275}
+--  }
+--
+--  local lumCenterX, ipY = drawCommonLogos(gfx)
+--  defineCommonDeviceInfo(layout, gfx, theme, lumCenterX, ipY)
+--
+--  -- Test dropdown control layout
+--  layout["test_dropdown"] = {
+--    Style           = "ComboBox",
+--    Position        = {50, 130},
+--    Size            = {180, 25},
+--    Font            = "Roboto",
+--    FontSize        = 11,
+--    TextColor       = {0, 0, 0},
+--    BackgroundColor = {20, 24, 40},
+--    IsReadOnly      = false
+--  }
+--end
+
+local pageBuilders = {
+  ["Port settings"] = function(layout, gfx, props)
+    buildPortSettingsPage(layout, gfx, props)
+  end,
+
+  ["Configuration"] = buildConfigurationPage,
+  ["Groups"] = buildGroupTrunkSettingsPage,
+--  ["Testing"] = buildTestingPage,
+
+  -- fallback for all model tabs
+  __index = function(_, key)
+    return function(layout, gfx, props)
+      local model = props["Model"] and props["Model"].Value or "GigaCore 30i"
+      buildControlsPage(layout, gfx, getPortCount(model))
+    end
+  end
+}
+setmetatable(pageBuilders, pageBuilders)
+--------------------------------------------------------------------------------
+-- GetControlLayout
+--------------------------------------------------------------------------------
+function GetControlLayout(props)
+  -- Update dark mode on every redraw (based on property value)
+  local darkProp = props["Dark Mode"]
+  local darkModeValue = (type(darkProp) == "table") and darkProp.Value or darkProp
+  state.darkMode = (darkModeValue == "No")
+
+  local pages = GetPages(props)
+  local idx = props["page_index"] and props["page_index"].Value or 1
+  local pageObj = pages[idx]
+  local pageName = pageObj and pageObj.name or "GigaCore 30i"
+  
+  local layout = {}
+  local gfx = {}
+  
+  local builder = pageBuilders[pageName]
+  if builder then
+    builder(layout, gfx, props)
+  end
+
+  return layout, gfx
+end
+--------------------------------------------------------------------------------
+-- CONTROL EVENT HANDLERS
+--------------------------------------------------------------------------------
+if Controls then
+
+  -- Apply test dropdown choices
+  if Controls["test_dropdown"] then
+    Controls["test_dropdown"].Choices = SPEED_CHOICES
+  end
+
+  local pc = state.portCount or 30
+
+  -- Ensure all dropdowns have an EventHandler attached before WebSocket updates use .String
+  for p = 1, pc do
+    local ctrl = Controls["port_speed_dropdown_" .. p]
+    if ctrl then
+      ctrl.Choices = SPEED_CHOICES
+      if not ctrl.EventHandler then
+        ctrl.EventHandler = function() end  -- Dummy handler for Q-SYS
+      end
+    end
+  end
+
+  Controls["ip_addr"].EventHandler = function(txt)
+    state.baseIP = txt.String
+  end
+
+  Controls["connect"].EventHandler = function(btn)
+    if btn.Boolean then
+      updateAuthStatus("")  -- Clear auth status on new attempt
+      state.baseIP = Controls["ip_addr"].String
+      openWS(state.baseIP)
+      btn.Boolean = false
+    end
+  end
+
+  Controls["identify"].EventHandler = function(btn)
+    if btn.Boolean and state.baseIP ~= "" then
+      local url = string.format("http://%s/api/identify", state.baseIP)
+      local body = '{"duration": 9}'
+
+      HttpClient.Upload{
+        Url     = url,
+        Method  = "PUT",
+        Data    = body,
+        Headers = MergeTables(
+          { ["Content-Type"] = "application/json" },
+          getAuthHeaders()
+        ),
+        EventHandler = function(rBody, status, err) end
+      }
+
+      btn.Boolean = false
+    end
+  end
+
+
+                                                                                                                                                  -- Enabled
+  for p = 1, pc do
+    local ctrl = Controls["port_enable_toggle_"..p]
+    if ctrl then
+      ctrl.EventHandler = function()
+        local newState = ctrl.Boolean
+        local url = string.format("http://%s/api/ports/port/%d/enabled", state.baseIP, p)
+  
+        HttpClient.Upload{
+          Url     = url,
+          Method  = "PUT",
+          Data    = newState and "true" or "false",
+          Headers = MergeTables(
+            { ["Content-Type"] = "application/json" },
+            getAuthHeaders()
+          ),
+          EventHandler = function(body, code, err)
+            log("Port "..p.." enable set to "..tostring(newState).." | HTTP "..tostring(code))
+          end
+        }
+      end
+    end
+  end
+
+  -- Legend edit bindings
+  for p = 1, pc do
+    local legendCtrl = Controls["port_legend_edit_"..p]
+    if legendCtrl then
+      legendCtrl.EventHandler = function(ctrl)
+        local newVal = ctrl.String
+        local url = string.format("http://%s/api/ports/port/%d/legend", state.baseIP, p)
+        local body = qsc_json.encode(newVal)
+        HttpClient.Upload{
+          Url     = url,
+          Method  = "PUT",
+          Data    = body,
+          Headers = MergeTables(
+            { ["Content-Type"] = "application/json" },
+            getAuthHeaders()
+          ),
+          EventHandler = function(rBody, status, err) end
+        }
+      end
+    end
+  end
+                                                                                                                                             -- Rlinkx
+  -- RLinkX toggle bindings
+  for p = 1, pc do
+    local toggleCtrl = Controls["port_rlinkx_toggle_"..p]
+    if toggleCtrl then
+      toggleCtrl.EventHandler = function(ctrl)
+        local enabled = ctrl.Boolean
+        local url = string.format("http://%s/api/ports/port/%d/rlinkx", state.baseIP, p)
+        local body = qsc_json.encode({ enabled = enabled })
+        HttpClient.Upload{
+          Url     = url,
+          Method  = "PUT",
+          Data    = body,
+          Headers = MergeTables(
+            { ["Content-Type"] = "application/json" },
+            getAuthHeaders()
+          ),
+          EventHandler = function(rBody, status, err)
+            log("RLinkX PUT port " .. p .. " => " .. tostring(enabled))
+          end
+        }
+      end
+    end
+  end
+
+-- PoE Bounce button bindings                                                                                                                                    -- bounce
+  for p = 1, pc do
+    local bounceCtrl = Controls["port_bounce_btn_"..p]
+    if bounceCtrl then
+      local port = p  -- fix scope
+      bounceCtrl.EventHandler = function()
+        local delay = tonumber(Controls["poe_bounce_delay"].String or "") or 3
+        local url   = string.format("http://%s/api/poe/ports/%d/enabled", state.baseIP, port)
+  
+        -- Disable PoE
+        HttpClient.Upload{
+          Url     = url,
+          Method  = "PUT",
+          Data    = "false",
+          Headers = MergeTables(
+            { ["Content-Type"] = "application/json" },
+            getAuthHeaders()
+          ),
+          EventHandler = function(rBody, status, err)
+            log("PoE DISABLE port " .. port .. ": HTTP " .. tostring(status or "nil"))
+  
+            -- Re-enable after delay
+            Timer.CallAfter(delay, function()
+              log("Timer expired — re-enabling PoE on port " .. port .. " after " .. delay .. "s delay")
+              HttpClient.Upload{
+                Url     = url,
+                Method  = "PUT",
+                Data    = '"true"',                                      -- test pour poe Bounce = "true",
+                Headers = MergeTables(
+                  { ["Content-Type"] = "application/json" },
+                  getAuthHeaders()
+                ),
+                EventHandler = function(rBody, status, err)
+                  log("PoE ENABLE port " .. port .. ": HTTP " .. tostring(status or "nil"))
+                end
+              }
+            end)
+          end
+        }
+      end
+    end
+  end
+
+  -- Speed dropdown event handlers
+  for p = 1, pc do
+    local dropdown = Controls["port_speed_dropdown_"..p]
+    if dropdown then
+      dropdown.EventHandler = function(ctrl)
+        local val = ctrl.String
+
+        -- Disable ports
+        if val == "Disabled" then
+          HttpClient.Upload{
+            Url     = string.format("http://%s/api/ports/port/%d/enabled", state.baseIP, p),
+            Method  = "PUT",
+            Data    = '"false"',
+            Headers = MergeTables(
+              { ["Content-Type"] = "application/json" },
+              getAuthHeaders()
+            ),
+            EventHandler = function(_, status, err)
+              log("Disabled port " .. p .. " => status: " .. tostring(status) .. ", err: " .. tostring(err))
+            end
+          }
+          return
+        end
+
+        -- Enable ports
+        HttpClient.Upload{
+          Url     = string.format("http://%s/api/ports/port/%d/enabled", state.baseIP, p),
+          Method  = "PUT",
+          Data    = '"true"',
+          Headers = MergeTables(
+            { ["Content-Type"] = "application/json" },
+            getAuthHeaders()
+          ),
+          EventHandler = function(_, status, err)
+            log("Enabled port " .. p .. " => status: " .. tostring(status) .. ", err: " .. tostring(err))
+          end
+        }
+
+        -- Send speed config
+        local url = string.format("http://%s/api/ports/port/%d/link_speed", state.baseIP, p)
+        local payload = {}
+
+        if val == "Auto" then
+          payload = { mode = "auto", speed = { "all" } }
+        elseif SPEED_API_MAP[val] then
+          payload = { mode = "fixed", speed = { SPEED_API_MAP[val] } }
+        end
+
+        HttpClient.Upload{
+          Url     = url,
+          Method  = "PUT",
+          Data    = qsc_json.encode(payload),
+          Headers = MergeTables(
+            { ["Content-Type"] = "application/json" },
+            getAuthHeaders()
+          ),
+          EventHandler = function(_, status, err)
+            log("Set link_speed on port " .. p .. " => status: " .. tostring(status) .. ", err: " .. tostring(err))
+          end
+        }
+      end
+    end
+  end
+end
+log("Enjoy")
